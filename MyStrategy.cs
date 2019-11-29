@@ -30,21 +30,11 @@ namespace AiCup2019
                 if (lootBox.Item is Item.HealthPack && unit.Health < 50)
                 {
                     if (!nearestWeapon.HasValue || DistanceSqr(unit.Position, lootBox.Position) <
-                       DistanceSqr(unit.Position, nearestWeapon.Value.Position))
+                        DistanceSqr(unit.Position, nearestWeapon.Value.Position))
                     {
                         nearestWeapon = lootBox;
                     }
                 }
-
-                //Надо разобаться со стрельбой, чтобы брать гранатомет
-                //if (lootBox.Item is Item.Mine)
-                //{
-                //    if (!nearestWeapon.HasValue || DistanceSqr(unit.Position, lootBox.Position) <
-                //        DistanceSqr(unit.Position, nearestWeapon.Value.Position))
-                //    {
-                //        nearestWeapon = lootBox;
-                //    }
-                //}
             }
 
             Vec2Double targetPos = unit.Position;
@@ -67,9 +57,13 @@ namespace AiCup2019
 
             bool jump = targetPos.Y > unit.Position.Y ||
                         targetPos.X > unit.Position.X &&
-                        game.Level.Tiles[(int) (unit.Position.X + 1)][(int) unit.Position.Y] == Tile.Wall ||
+                        game.Level.Tiles[(int)(unit.Position.X + 1)][(int)unit.Position.Y] == Tile.Wall ||
                         targetPos.X < unit.Position.X &&
-                        game.Level.Tiles[(int) (unit.Position.X - 1)][(int) (unit.Position.Y)] == Tile.Wall;
+                        game.Level.Tiles[(int)(unit.Position.X - 1)][(int)(unit.Position.Y)] == Tile.Wall;
+
+            bool shoot = targetPos.X < unit.Position.X
+                ? game.Level.Tiles[(int) (targetPos.X) - 1][(int) targetPos.Y] != Tile.Wall
+                : game.Level.Tiles[(int) (targetPos.X) + -1][(int) targetPos.Y] != Tile.Wall;
 
             UnitAction action = new UnitAction
             {
@@ -77,7 +71,7 @@ namespace AiCup2019
                 Jump = jump,
                 JumpDown = !jump,
                 Aim = aim,
-                Shoot = true,
+                Shoot = shoot,
                 SwapWeapon = false,
                 PlantMine = false
             };
