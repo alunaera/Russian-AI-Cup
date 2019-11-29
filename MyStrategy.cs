@@ -27,14 +27,24 @@ namespace AiCup2019
             LootBox? nearestWeapon = null;
             foreach (var lootBox in game.LootBoxes)
             {
-                if (!(lootBox.Item is Item.Weapon))
-                    continue;
-
-                if (!nearestWeapon.HasValue || DistanceSqr(unit.Position, lootBox.Position) <
-                    DistanceSqr(unit.Position, nearestWeapon.Value.Position))
+                if (lootBox.Item is Item.HealthPack && unit.Health < 50)
                 {
-                    nearestWeapon = lootBox;
+                    if (!nearestWeapon.HasValue || DistanceSqr(unit.Position, lootBox.Position) <
+                       DistanceSqr(unit.Position, nearestWeapon.Value.Position))
+                    {
+                        nearestWeapon = lootBox;
+                    }
                 }
+
+                //Надо разобаться со стрельбой, чтобы брать гранатомет
+                //if (lootBox.Item is Item.Mine)
+                //{
+                //    if (!nearestWeapon.HasValue || DistanceSqr(unit.Position, lootBox.Position) <
+                //        DistanceSqr(unit.Position, nearestWeapon.Value.Position))
+                //    {
+                //        nearestWeapon = lootBox;
+                //    }
+                //}
             }
 
             Vec2Double targetPos = unit.Position;
