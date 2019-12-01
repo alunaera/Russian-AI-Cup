@@ -65,9 +65,25 @@ namespace AiCup2019
                 ? game.Level.Tiles[(int) (targetPos.X) - 1][(int) targetPos.Y] != Tile.Wall
                 : game.Level.Tiles[(int) (targetPos.X) + -1][(int) targetPos.Y] != Tile.Wall;
 
+            double velocity;
+
+            if (nearestEnemy != null && nearestEnemy.Value.Position.X - unit.Position.X == 0)
+                velocity = targetPos.X - unit.Position.X;
+            else
+            {
+                velocity = unit.Position.X - nearestEnemy.Value.Position.X;
+                jump = true;
+            }
+
+            if (unit.Health < 50 && nearestWeapon != null)
+            {
+                velocity = nearestWeapon.Value.Position.X - unit.Position.X;
+                jump = true;
+            }
+
             UnitAction action = new UnitAction
             {
-                Velocity = targetPos.X - unit.Position.X,
+                Velocity = velocity,
                 Jump = jump,
                 JumpDown = !jump,
                 Aim = aim,
