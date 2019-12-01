@@ -1,3 +1,4 @@
+using System;
 using AiCup2019.Model;
 
 namespace AiCup2019
@@ -27,7 +28,7 @@ namespace AiCup2019
             LootBox? nearestWeapon = null;
             foreach (var lootBox in game.LootBoxes)
             {
-                if (lootBox.Item is Item.HealthPack && unit.Health < 50)
+                if (lootBox.Item is Item.HealthPack && unit.Health != 100)
                 {
                     if (!nearestWeapon.HasValue || DistanceSqr(unit.Position, lootBox.Position) <
                         DistanceSqr(unit.Position, nearestWeapon.Value.Position))
@@ -62,23 +63,18 @@ namespace AiCup2019
                         game.Level.Tiles[(int)(unit.Position.X - 1)][(int)(unit.Position.Y)] == Tile.Wall;
 
             bool shoot = targetPos.X < unit.Position.X
-                ? game.Level.Tiles[(int) (targetPos.X) - 1][(int) targetPos.Y] != Tile.Wall
-                : game.Level.Tiles[(int) (targetPos.X) + -1][(int) targetPos.Y] != Tile.Wall;
+                ? game.Level.Tiles[(int)(targetPos.X) - 1][(int)targetPos.Y] != Tile.Wall
+                : game.Level.Tiles[(int)(targetPos.X) + -1][(int)targetPos.Y] != Tile.Wall;
 
-            double velocity;
+            double velocity = targetPos.X - unit.Position.X;
 
-            if (nearestEnemy != null && nearestEnemy.Value.Position.X - unit.Position.X == 0)
-                velocity = targetPos.X - unit.Position.X;
-            else
-            {
-                velocity = unit.Position.X - nearestEnemy.Value.Position.X;
-                jump = true;
-            }
-
-            if (unit.Health < 50 && nearestWeapon != null)
-            {
+            if (unit.Health != 100 && nearestWeapon != null)
                 velocity = nearestWeapon.Value.Position.X - unit.Position.X;
+
+            if (targetPos.X - unit.Position.X < 2)
+            {
                 jump = true;
+                velocity += 5 * Math.Sign(unit.Position.X - targetPos.X);
             }
 
             UnitAction action = new UnitAction
