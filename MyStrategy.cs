@@ -83,9 +83,13 @@ namespace AiCup2019
                     jump = true;
             }
 
-            if (unit.Weapon.HasValue && unit.Weapon.Value.Typ != WeaponType.RocketLauncher)
+            if (unit.Weapon.HasValue && unit.Weapon.Value.Typ == WeaponType.RocketLauncher)
             {
-                shoot = game.Level.Tiles[(int) (targetPos.X) + 1][(int) targetPos.Y] != Tile.Wall;
+                for (int i = (int)unit.Position.X; i <(int)targetPos.X; i++)
+                {
+                    if (game.Level.Tiles[i][i] != Tile.Wall)
+                        shoot = true;
+                }
             }
 
             UnitAction action = new UnitAction
