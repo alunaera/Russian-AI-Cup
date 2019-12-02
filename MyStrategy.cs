@@ -62,11 +62,10 @@ namespace AiCup2019
                         targetPos.X < unit.Position.X &&
                         game.Level.Tiles[(int)(unit.Position.X - 1)][(int)(unit.Position.Y)] == Tile.Wall;
 
-            bool shoot = targetPos.X < unit.Position.X
-                ? game.Level.Tiles[(int)(targetPos.X) - 1][(int)targetPos.Y] != Tile.Wall
-                : game.Level.Tiles[(int)(targetPos.X) + -1][(int)targetPos.Y] != Tile.Wall;
+            bool shoot = true;
 
             double velocity = targetPos.X - unit.Position.X;
+
 
             if (unit.Health != 100 && nearestWeapon != null)
             {
@@ -78,11 +77,16 @@ namespace AiCup2019
                     shoot = true;
             }
 
+            if (nearestEnemy?.Weapon != null)
+            {
+                if (nearestEnemy.Value.Weapon.Value.WasShooting && nearestEnemy.Value.Weapon.Value.Typ == WeaponType.RocketLauncher)
+                    jump = true;
+            }
 
-            //if (targetPos.X - unit.Position.X < 2)
-            //{
-            //    velocity += 5 * Math.Sign(unit.Position.X - targetPos.X);
-            //}
+            if (unit.Weapon.HasValue && unit.Weapon.Value.Typ != WeaponType.RocketLauncher)
+            {
+                shoot = game.Level.Tiles[(int) (targetPos.X) + 1][(int) targetPos.Y] != Tile.Wall;
+            }
 
             UnitAction action = new UnitAction
             {
