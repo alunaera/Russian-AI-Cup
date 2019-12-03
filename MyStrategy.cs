@@ -66,6 +66,11 @@ namespace AiCup2019
 
             double velocity = targetPos.X - unit.Position.X;
 
+            if (Math.Abs(targetPos.X - unit.Position.X) < 4 && targetPos.Y == unit.Position.Y)
+                velocity = unit.Position.X - targetPos.X;
+            else
+                velocity = targetPos.X - unit.Position.X;
+
 
             if (unit.Health != 100 && nearestWeapon != null)
             {
@@ -74,16 +79,21 @@ namespace AiCup2019
                 if (nearestWeapon.Value.Position.Y > unit.Position.X)
                     jump = true;
 
-                if (unit.Health > nearestEnemy.Value.Health)
+                if (nearestEnemy.Value.Weapon != null &&
+                    (unit.Health > nearestEnemy.Value.Health &&
+                     unit.Weapon.Value.Magazine > nearestEnemy.Value.Weapon.Value.Magazine))
                     shoot = true;
             }
 
             if (nearestEnemy?.Weapon != null)
             {
-                if (nearestEnemy.Value.Weapon.Value.WasShooting && nearestEnemy.Value.Weapon.Value.Typ == WeaponType.RocketLauncher)
+                if (nearestEnemy.Value.Weapon.Value.WasShooting &&
+                    nearestEnemy.Value.Weapon.Value.Typ == WeaponType.RocketLauncher)
                 {
-                    jump = true;
-                    velocity = nearestEnemy.Value.Position.X - unit.Position.X;
+                    if (unit.Position.Y == nearestEnemy.Value.Position.Y)
+                        jump = true;
+                    else
+                        velocity = nearestEnemy.Value.Position.X - unit.Position.X;
                 }
             }
 
@@ -127,8 +137,9 @@ namespace AiCup2019
                 JumpDown = !jump,
                 Aim = aim,
                 Shoot = shoot,
+                Reload = false,
                 SwapWeapon = false,
-                PlantMine = false
+                PlantMine = true
             };
 
             return action;
