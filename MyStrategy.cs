@@ -165,7 +165,7 @@ namespace AiCup2019
                 Shoot = shoot,
                 Reload = false,
                 SwapWeapon = false,
-                PlantMine = true
+                PlantMine = false
             };
 
             return action;
