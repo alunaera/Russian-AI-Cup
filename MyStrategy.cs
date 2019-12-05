@@ -68,7 +68,7 @@ namespace AiCup2019
                     nearestEnemy.Value.Position.Y - unit.Position.Y);
             }
 
-            bool jump = targetPos.Y > unit.Position.Y ||
+            bool jump = 
                         targetPos.X > unit.Position.X &&
                         game.Level.Tiles[(int)(unit.Position.X + 1)][(int)unit.Position.Y] == Tile.Wall ||
                         targetPos.X < unit.Position.X &&
@@ -97,28 +97,73 @@ namespace AiCup2019
 
                 if (unit.Weapon.Value.Typ == WeaponType.RocketLauncher)
                 {
-                    if ((int) (unit.Position.X + Math.Abs(unit.Position.X - targetPos.X)) < game.Level.Tiles.GetLength(0))
-                        shoot = game.Level.Tiles[(int) (unit.Position.X + Math.Abs(unit.Position.X - targetPos.X))][(int) unit.Position.Y] != Tile.Wall;
+                    int minY, maxY;
+                    if (targetPos.Y >= unit.Position.Y)
+                    {
+                        minY = (int) (unit.Position.Y);
+                        maxY = (int) (targetPos.Y);
+                    }
+                    else
+                    {
+                        minY = (int)(targetPos.Y);
+                        maxY = (int)(unit.Position.Y);
+                    }
+
+                    int minX, maxX;
+                    if (targetPos.X >= unit.Position.X)
+                    {
+                        minX = (int)(unit.Position.X);
+                        maxX = (int)(targetPos.X);
+                    }
+                    else
+                    {
+                        minX = (int)(targetPos.X);
+                        maxX = (int)(unit.Position.X);
+                    }
+
+                    for (int i = minX; i < maxX; i++)
+                        for (int j = minY; j < maxY; j++)
+                            if (game.Level.Tiles[i][j] == Tile.Wall)
+                                shoot = false;
                 }
 
                 switch (unit.Weapon.Value.Typ)
                 {
                     case WeaponType.AssaultRifle:
-                    case WeaponType.RocketLauncher:
+                    case WeaponType.Pistol:
                     {
                         if (Math.Abs(nearestEnemy.Value.Position.X - unit.Position.X) < 5)
                         {
                             velocity = (targetPos.X - unit.Position.X);
                             velocity -= Math.Sign(velocity) * 15;
-
-                            jump = true;
                         }
                         else
                             velocity = targetPos.X - unit.Position.X;
 
                         break;
                     }
+
+                    case WeaponType.RocketLauncher:
+
+                        if (Math.Abs(nearestEnemy.Value.Position.X - unit.Position.X) < 7 ||
+                            DistanceSqr(nearestEnemy.Value.Position, unit.Position) < 10)
+                        {
+                            velocity = (targetPos.X - unit.Position.X);
+                            velocity -= Math.Sign(velocity) * 15;
+
+                            for (int i = 0; i < 5; i++)
+                            {
+                                if (game.Level.Tiles[(int)unit.Position.X - i * Math.Sign(velocity)][(int)unit.Position.Y + 1] == Tile.Wall)
+                                    jump = true;
+                            }
+
+                        }
+                        else
+                            velocity = targetPos.X - unit.Position.X;
+
+                        break;
                 }
+
             }
             else
             {
@@ -132,10 +177,7 @@ namespace AiCup2019
             if (unit.Health != 100 && nearestWeapon != null)
             {
                 velocity = nearestWeapon.Value.Position.X - unit.Position.X;
-                velocity += Math.Sign(velocity) * 10;
-
-                if (nearestWeapon.Value.Position.Y > unit.Position.Y)
-                    jump = true;
+                velocity += Math.Sign(velocity) * 15;
 
                 if (nearestEnemy.Value.Weapon != null &&
                     (unit.Health > nearestEnemy.Value.Health &&
