@@ -11,6 +11,11 @@ namespace AiCup2019
             return (a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y);
         }
 
+        static double GetVelocity(double start, double finish, int offset)
+        {
+            return start - finish + Math.Sign(start - finish) * offset;
+        }
+
         public UnitAction GetAction(Unit unit, Game game, Debug debug)
         {
             Unit? nearestEnemy = game.Units
@@ -59,6 +64,7 @@ namespace AiCup2019
             {
                 targetPos = nearestEnemy.Value.Position;
             }
+
             debug.Draw(new CustomData.Log("Target pos: " + targetPos));
 
             Vec2Double aim = new Vec2Double(0, 0);
@@ -68,11 +74,10 @@ namespace AiCup2019
                     nearestEnemy.Value.Position.Y - unit.Position.Y);
             }
 
-            bool jump = 
-                        targetPos.X > unit.Position.X &&
-                        game.Level.Tiles[(int)(unit.Position.X + 1)][(int)unit.Position.Y] == Tile.Wall ||
+            bool jump = targetPos.X > unit.Position.X &&
+                        game.Level.Tiles[(int) (unit.Position.X + 1)][(int) unit.Position.Y] == Tile.Wall ||
                         targetPos.X < unit.Position.X &&
-                        game.Level.Tiles[(int)(unit.Position.X - 1)][(int)(unit.Position.Y)] == Tile.Wall;
+                        game.Level.Tiles[(int) (unit.Position.X - 1)][(int) (unit.Position.Y)] == Tile.Wall;
 
             bool shoot = true;
             bool reload = false;
@@ -81,12 +86,13 @@ namespace AiCup2019
 
             if (nearestEnemy?.Weapon != null)
             {
-                if (nearestEnemy.Value.Weapon.Value.WasShooting && nearestEnemy.Value.Weapon.Value.Typ == WeaponType.RocketLauncher)
+                if (nearestEnemy.Value.Weapon.Value.WasShooting &&
+                    nearestEnemy.Value.Weapon.Value.Typ == WeaponType.RocketLauncher)
                 {
                     if (unit.Position.Y == nearestEnemy.Value.Position.Y)
                         jump = true;
                     else
-                        velocity = nearestEnemy.Value.Position.X - unit.Position.X;
+                        velocity = GetVelocity(nearestEnemy.Value.Position.X, unit.Position.X, 10);
                 }
             }
 
@@ -95,50 +101,30 @@ namespace AiCup2019
                 if (unit.Weapon.Value.Magazine == 0)
                     reload = true;
 
-                if (unit.Weapon.Value.Typ == WeaponType.RocketLauncher)
-                {
-                    int minY, maxY;
-                    if (targetPos.Y >= unit.Position.Y)
-                    {
-                        minY = (int) (unit.Position.Y);
-                        maxY = (int) (targetPos.Y);
-                    }
-                    else
-                    {
-                        minY = (int)(targetPos.Y);
-                        maxY = (int)(unit.Position.Y);
-                    }
+                int minX = (int) Math.Min(targetPos.X, unit.Position.X);
+                int minY = (int) Math.Min(targetPos.Y, unit.Position.Y);
+                int maxX = (int) Math.Max(targetPos.X, unit.Position.X);
+                int maxY = (int) Math.Max(targetPos.Y, unit.Position.Y);
 
-                    int minX, maxX;
-                    if (targetPos.X >= unit.Position.X)
-                    {
-                        minX = (int)(unit.Position.X);
-                        maxX = (int)(targetPos.X);
-                    }
-                    else
-                    {
-                        minX = (int)(targetPos.X);
-                        maxX = (int)(unit.Position.X);
-                    }
-
-                    for (int i = minX; i < maxX; i++)
-                        for (int j = minY; j < maxY; j++)
-                            if (game.Level.Tiles[i][j] == Tile.Wall)
-                                shoot = false;
-                }
+                for (int i = minX; i < maxX; i++)
+                    for (int j = minY; j < maxY; j++)
+                        if (game.Level.Tiles[i][j] == Tile.Wall)
+                            shoot = false;
 
                 switch (unit.Weapon.Value.Typ)
                 {
                     case WeaponType.AssaultRifle:
                     case WeaponType.Pistol:
                     {
-                        if (Math.Abs(nearestEnemy.Value.Position.X - unit.Position.X) < 5)
+                        velocity = Math.Abs(nearestEnemy.Value.Position.X - unit.Position.X) < 7
+                            ? GetVelocity(targetPos.X, unit.Position.X, -15)
+                            : GetVelocity(targetPos.X, unit.Position.X, 0);
+
+                        if (Math.Abs(nearestEnemy.Value.Position.X - unit.Position.X) < 4)
                         {
-                            velocity = (targetPos.X - unit.Position.X);
-                            velocity -= Math.Sign(velocity) * 15;
+                            jump = true;
+                            velocity = GetVelocity(targetPos.X, unit.Position.X, 10);
                         }
-                        else
-                            velocity = targetPos.X - unit.Position.X;
 
                         break;
                     }
@@ -148,41 +134,46 @@ namespace AiCup2019
                         if (Math.Abs(nearestEnemy.Value.Position.X - unit.Position.X) < 7 ||
                             DistanceSqr(nearestEnemy.Value.Position, unit.Position) < 10)
                         {
-                            velocity = (targetPos.X - unit.Position.X);
-                            velocity -= Math.Sign(velocity) * 15;
+                            velocity = GetVelocity(targetPos.X, unit.Position.X, -15);
 
                             for (int i = 0; i < 5; i++)
                             {
-                                if (game.Level.Tiles[(int)unit.Position.X - i * Math.Sign(velocity)][(int)unit.Position.Y + 1] == Tile.Wall)
+                                int x = (int) unit.Position.X + i * Math.Sign(velocity);
+                                int y = (int) unit.Position.Y;
+                                if (x < game.Level.Tiles.GetLength(0) && game.Level.Tiles[x][y] == Tile.Wall)
                                     jump = true;
                             }
 
                         }
                         else
-                            velocity = targetPos.X - unit.Position.X;
+                            velocity = GetVelocity(targetPos.X, unit.Position.X, 0);
 
                         break;
                 }
-
             }
             else
             {
-                velocity = nearestWeapon.Value.Position.X - unit.Position.X;
-                velocity += Math.Sign(velocity) * 10;
+                velocity = GetVelocity(nearestWeapon.Value.Position.X, unit.Position.X, 10);
 
-                if (nearestWeapon.Value.Position.X == unit.Position.X && nearestWeapon.Value.Position.Y != unit.Position.Y)
-                    velocity = unit.Position.X + 10;
+                if (nearestWeapon.Value.Position.X == unit.Position.X &&
+                    nearestWeapon.Value.Position.Y > unit.Position.Y)
+                    jump = true;
             }
 
             if (unit.Health != 100 && nearestWeapon != null)
             {
-                velocity = nearestWeapon.Value.Position.X - unit.Position.X;
-                velocity += Math.Sign(velocity) * 15;
+                velocity = GetVelocity(nearestWeapon.Value.Position.X, unit.Position.X, 15);
 
                 if (nearestEnemy.Value.Weapon != null &&
                     (unit.Health > nearestEnemy.Value.Health &&
                      unit.Weapon.Value.Magazine > nearestEnemy.Value.Weapon.Value.Magazine))
+                {
                     shoot = true;
+
+                    if (unit.Weapon.Value.Typ == WeaponType.RocketLauncher &&
+                        DistanceSqr(unit.Position, nearestEnemy.Value.Position) > 15)
+                        shoot = false;
+                }
             }
 
             UnitAction action = new UnitAction
