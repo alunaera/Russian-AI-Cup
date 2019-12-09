@@ -126,6 +126,9 @@ namespace AiCup2019
                             velocity = GetVelocity(targetPos.X, unit.Position.X, 10);
                         }
 
+                        if (DistanceSqr(unit.Position, nearestEnemy.Value.Position) > 8 && unit.Health == 100)
+                            shoot = false;
+
                         break;
                     }
 
@@ -148,6 +151,9 @@ namespace AiCup2019
                         else
                             velocity = GetVelocity(targetPos.X, unit.Position.X, 0);
 
+                        if (DistanceSqr(unit.Position, nearestEnemy.Value.Position) > 13)
+                            shoot = false;
+
                         break;
                 }
             }
@@ -169,10 +175,21 @@ namespace AiCup2019
                      unit.Weapon.Value.Magazine > nearestEnemy.Value.Weapon.Value.Magazine))
                 {
                     shoot = true;
+                }
+            }
 
-                    if (unit.Weapon.Value.Typ == WeaponType.RocketLauncher &&
-                        DistanceSqr(unit.Position, nearestEnemy.Value.Position) > 15)
-                        shoot = false;
+            if (unit.Weapon.HasValue)
+            {
+                switch (unit.Weapon.Value.Typ)
+                {
+                    case WeaponType.RocketLauncher:
+                        
+                        break;
+
+                    case WeaponType.Pistol:
+                    case WeaponType.AssaultRifle:
+                        
+                        break;
                 }
             }
 
