@@ -101,15 +101,36 @@ namespace AiCup2019
                 if (unit.Weapon.Value.Magazine == 0)
                     reload = true;
 
-                int minX = (int) Math.Min(targetPos.X, unit.Position.X);
-                int minY = (int) Math.Min(targetPos.Y, unit.Position.Y);
-                int maxX = (int) Math.Max(targetPos.X, unit.Position.X);
-                int maxY = (int) Math.Max(targetPos.Y, unit.Position.Y);
+                int minX = (int)targetPos.X;
+                int minY = (int)targetPos.Y;
+                int maxX = (int)unit.Position.X;
+                int maxY = (int)unit.Position.Y;
 
-                for (int i = minX; i < maxX; i++)
-                    for (int j = minY; j < maxY; j++)
-                        if (game.Level.Tiles[i][j] == Tile.Wall)
-                            shoot = false;
+                int dx = Math.Abs(maxX - minX), sx = minX < maxX ? 1 : -1;
+                int dy = Math.Abs(maxY - minY), sy = minY < maxY ? 1 : -1;
+                int err = (dx > dy ? dx : -dy) / 2;
+                for (;;)
+                {
+                    if (game.Level.Tiles[minX][maxY] == Tile.Wall)
+                        shoot = false;
+
+                    if (minX == maxX && minY == maxY) 
+                        break;
+
+                    var e2 = err;
+
+                    if (e2 > -dx)
+                    {
+                        err -= dy;
+                        minX += sx;
+                    }
+
+                    if (e2 < dy)
+                    {
+                        err += dx;
+                        minY += sy;
+                    }
+                }
 
                 switch (unit.Weapon.Value.Typ)
                 {
@@ -125,9 +146,6 @@ namespace AiCup2019
                             jump = true;
                             velocity = GetVelocity(targetPos.X, unit.Position.X, 10);
                         }
-
-                        if (DistanceSqr(unit.Position, nearestEnemy.Value.Position) > 8 && unit.Health == 100)
-                            shoot = false;
 
                         break;
                     }
@@ -151,7 +169,7 @@ namespace AiCup2019
                         else
                             velocity = GetVelocity(targetPos.X, unit.Position.X, 0);
 
-                        if (DistanceSqr(unit.Position, nearestEnemy.Value.Position) > 13)
+                        if (DistanceSqr(unit.Position, nearestEnemy.Value.Position) < 5 && unit.Health < nearestEnemy.Value.Health)
                             shoot = false;
 
                         break;
