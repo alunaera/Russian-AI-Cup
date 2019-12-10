@@ -116,11 +116,10 @@ namespace AiCup2019
                     nearestEnemy.Value.Position.Y - unit.Position.Y);
             }
 
-            bool jump = //targetPos.X > unit.Position.X ||
-                        game.Level.Tiles[(int) (unit.Position.X + 1)][(int) unit.Position.Y] == Tile.Wall ||
-                 //       targetPos.X < unit.Position.X ||
+            bool jump = game.Level.Tiles[(int) (unit.Position.X + 1)][(int) unit.Position.Y] == Tile.Wall ||
                         game.Level.Tiles[(int) (unit.Position.X - 1)][(int) (unit.Position.Y)] == Tile.Wall;
 
+                
             bool shoot = true;
             bool reload = false;
 
@@ -166,8 +165,7 @@ namespace AiCup2019
                         }
 
                         if (unit.Position.X == nearestEnemy.Value.Position.X &&
-                            unit.Position.Y != nearestEnemy.Value.Position.Y &&
-                            DistanceSqr(unit.Position, targetPos) > 2)
+                            Math.Abs(unit.Position.Y - nearestEnemy.Value.Position.Y) > 1)
                             shoot = false;
 
                         break;
@@ -201,11 +199,17 @@ namespace AiCup2019
             }
             else
             {
-                velocity = GetVelocity(nearestWeapon.Value.Position.X, unit.Position.X, 10);
+                if (nearestWeapon.Value.Position.X != unit.Position.X)
+                    velocity = GetVelocity(nearestWeapon.Value.Position.X, unit.Position.X, 10);
+                else
+                {
+                    velocity = unit.Position.X;
+                }
 
-                if (nearestWeapon.Value.Position.X == unit.Position.X &&
-                    nearestWeapon.Value.Position.Y > unit.Position.Y)
+                if (nearestWeapon.Value.Position.Y > unit.Position.Y)
+                {
                     jump = true;
+                }
             }
 
             if (unit.Health < game.Properties.UnitMaxHealth * 0.9 && nearestWeapon != null)
