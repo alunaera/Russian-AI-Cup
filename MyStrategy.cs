@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using AiCup2019.Model;
 
@@ -14,6 +16,46 @@ namespace AiCup2019
         static double GetVelocity(double start, double finish, int offset)
         {
             return start - finish + Math.Sign(start - finish) * offset;
+        }
+
+        static List<Point> GetLine(Vec2Double start, Vec2Double finish)
+        {
+            int startX = (int) start.X;
+            int startY = (int) start.Y;
+
+            int finishX = (int) finish.X;
+            int finishY = (int) finish.Y;
+
+            int dx = Math.Abs(finishX - startX), sx = startX < finishX ? 1 : -1;
+            int dy = Math.Abs(finishY - startY), sy = startY < finishY ? 1 : -1;
+            int err = (dx > dy ? dx : -dy) / 2;
+
+            List<Point> lineList = new List<Point>();
+
+            for (;;)
+            {
+
+                if (startX == finishX && startY == finishY)
+                    break;
+
+                lineList.Add(new Point(startX, startY));
+
+                var e2 = err;
+
+                if (e2 > -dx)
+                {
+                    err -= dy;
+                    startX += sx;
+                }
+
+                if (e2 < dy)
+                {
+                    err += dx;
+                    startY += sy;
+                }
+            }
+
+            return lineList;
         }
 
         public UnitAction GetAction(Unit unit, Game game, Debug debug)
@@ -74,15 +116,16 @@ namespace AiCup2019
                     nearestEnemy.Value.Position.Y - unit.Position.Y);
             }
 
-            bool jump = targetPos.X > unit.Position.X &&
+            bool jump = //targetPos.X > unit.Position.X ||
                         game.Level.Tiles[(int) (unit.Position.X + 1)][(int) unit.Position.Y] == Tile.Wall ||
-                        targetPos.X < unit.Position.X &&
+                 //       targetPos.X < unit.Position.X ||
                         game.Level.Tiles[(int) (unit.Position.X - 1)][(int) (unit.Position.Y)] == Tile.Wall;
 
             bool shoot = true;
             bool reload = false;
 
-            double velocity = targetPos.X - unit.Position.X;
+            double velocity = GetVelocity(targetPos.X, unit.Position.X, 1);
+            List<Point> bulletTrajectory = GetLine(unit.Position, targetPos);
 
             if (nearestEnemy?.Weapon != null)
             {
@@ -101,35 +144,10 @@ namespace AiCup2019
                 if (unit.Weapon.Value.Magazine == 0)
                     reload = true;
 
-                int minX = (int)targetPos.X;
-                int minY = (int)targetPos.Y;
-                int maxX = (int)unit.Position.X;
-                int maxY = (int)unit.Position.Y;
-
-                int dx = Math.Abs(maxX - minX), sx = minX < maxX ? 1 : -1;
-                int dy = Math.Abs(maxY - minY), sy = minY < maxY ? 1 : -1;
-                int err = (dx > dy ? dx : -dy) / 2;
-                for (;;)
+                foreach (Point point in bulletTrajectory)
                 {
-                    if (game.Level.Tiles[minX][maxY] == Tile.Wall)
+                       if (game.Level.Tiles[point.X][point.Y] == Tile.Wall)
                         shoot = false;
-
-                    if (minX == maxX && minY == maxY) 
-                        break;
-
-                    var e2 = err;
-
-                    if (e2 > -dx)
-                    {
-                        err -= dy;
-                        minX += sx;
-                    }
-
-                    if (e2 < dy)
-                    {
-                        err += dx;
-                        minY += sy;
-                    }
                 }
 
                 switch (unit.Weapon.Value.Typ)
@@ -146,6 +164,11 @@ namespace AiCup2019
                             jump = true;
                             velocity = GetVelocity(targetPos.X, unit.Position.X, 10);
                         }
+
+                        if (unit.Position.X == nearestEnemy.Value.Position.X &&
+                            unit.Position.Y != nearestEnemy.Value.Position.Y &&
+                            DistanceSqr(unit.Position, targetPos) > 2)
+                            shoot = false;
 
                         break;
                     }
@@ -169,7 +192,8 @@ namespace AiCup2019
                         else
                             velocity = GetVelocity(targetPos.X, unit.Position.X, 0);
 
-                        if (DistanceSqr(unit.Position, nearestEnemy.Value.Position) < 5 && unit.Health < nearestEnemy.Value.Health)
+                        if (nearestEnemy.Value.Health < game.Properties.UnitMaxHealth * 0.4 &&
+                            unit.Health < nearestEnemy.Value.Health)
                             shoot = false;
 
                         break;
@@ -184,30 +208,18 @@ namespace AiCup2019
                     jump = true;
             }
 
-            if (unit.Health != 100 && nearestWeapon != null)
+            if (unit.Health < game.Properties.UnitMaxHealth * 0.9 && nearestWeapon != null)
             {
-                velocity = GetVelocity(nearestWeapon.Value.Position.X, unit.Position.X, 15);
+                if (unit.Position.X != nearestWeapon.Value.Position.X)
+                    velocity = GetVelocity(nearestWeapon.Value.Position.X, unit.Position.X, 10);
+                else
+                    jump = true;
 
                 if (nearestEnemy.Value.Weapon != null &&
                     (unit.Health > nearestEnemy.Value.Health &&
                      unit.Weapon.Value.Magazine > nearestEnemy.Value.Weapon.Value.Magazine))
                 {
                     shoot = true;
-                }
-            }
-
-            if (unit.Weapon.HasValue)
-            {
-                switch (unit.Weapon.Value.Typ)
-                {
-                    case WeaponType.RocketLauncher:
-                        
-                        break;
-
-                    case WeaponType.Pistol:
-                    case WeaponType.AssaultRifle:
-                        
-                        break;
                 }
             }
 
