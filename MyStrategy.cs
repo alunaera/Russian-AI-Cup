@@ -58,6 +58,17 @@ namespace AiCup2019
             return lineList;
         }
 
+        static bool IsFriendOnBulletTrajectory(List<Point> trajectory, Unit friend)
+        {
+            foreach (var point in trajectory)
+            {
+                for (int i = (int)(point.X - friend.Size.X / 2) ; i < (int)(point.X + friend.Size.X / 2); i++)
+                    for (int j = (int)(point.Y - friend.Size.Y); j < (int)(friend.Size.Y); j++)
+                        return (int)friend.Position.X == i && (int)friend.Position.Y == j;
+            }
+            return false;
+        }
+
         public UnitAction GetAction(Unit unit, Game game, Debug debug)
         {
             Unit? nearestEnemy = game.Units
@@ -67,7 +78,7 @@ namespace AiCup2019
                 .FirstOrDefault();
 
             Unit? nearestFriend = game.Units
-                .Where(otherUnit => otherUnit.PlayerId == unit.PlayerId)
+                .Where(otherUnit => otherUnit.PlayerId == unit.PlayerId && otherUnit.Id != unit.Id)
                 .OrderBy(otherUnit => DistanceSqr(unit.Position, otherUnit.Position))
                 .Select(otherUnit => (Unit?)otherUnit)
                 .FirstOrDefault();
@@ -135,7 +146,7 @@ namespace AiCup2019
             double velocity = GetVelocity(targetPos.X, unit.Position.X, 1);
 
             List<Point> bulletTrajectoryToTarget = GetLine(unit.Position, targetPos);
-            List<Point> bulletTrajectoryToFriend = GetLine(unit.Position, nearestFriend.Value.Position);
+            
 
 
             if (nearestEnemy?.Weapon != null)
@@ -160,8 +171,13 @@ namespace AiCup2019
 
                 foreach (Point point in bulletTrajectoryToTarget)
                 {
-                    if (game.Level.Tiles[point.X][point.Y] == Tile.Wall ||
-                        nearestFriend.Value.Position.X == point.X && nearestFriend.Value.Position.Y == point.Y)
+                    if (game.Level.Tiles[point.X][point.Y] == Tile.Wall)
+                        shoot = false;
+                }
+
+                if (nearestFriend.HasValue)
+                {
+                    if (IsFriendOnBulletTrajectory(bulletTrajectoryToTarget, nearestFriend.Value))
                         shoot = false;
                 }
 
